@@ -24,6 +24,7 @@ components/
   team-builder.tsx
 lib/
   cricket-api.ts
+  match-sync.ts
   prisma.ts
   scoring.ts
   validation.ts
@@ -42,7 +43,9 @@ Core models:
 - `ContestEntry` -> 11 selected `TeamPlayer` rows
 - `PlayerStat` stores live stat snapshots + fantasy points
 
-Run this after setting `DATABASE_URL`:
+Use pooled + direct URLs in production:
+- `DATABASE_URL`: pooled connection for runtime
+- `DIRECT_URL`: non-pooled/direct connection for Prisma migrate
 
 ```bash
 npx prisma migrate dev --name init
@@ -95,7 +98,7 @@ Design is mobile-first, minimal, and dashboard-like.
    ```bash
    cp .env.example .env
    ```
-3. Configure Postgres URL and optional `CRIC_API_KEY`
+3. Configure Postgres URL(s) and optional `CRIC_API_KEY`
 4. Apply schema
    ```bash
    npx prisma migrate dev --name init
@@ -106,6 +109,20 @@ Design is mobile-first, minimal, and dashboard-like.
    npm run dev
    ```
 
+## Vercel + PostgreSQL Deployment
+
+Yes, this app can be hosted on Vercel, but you must configure Postgres correctly:
+
+1. Create a managed Postgres database (Neon/Supabase/Vercel Postgres).
+2. Set Vercel env vars:
+   - `DATABASE_URL` = pooled connection string
+   - `DIRECT_URL` = direct connection string
+   - `CRIC_API_KEY` (optional)
+3. Run migrations from CI/local against `DIRECT_URL`.
+4. Deploy to Vercel.
+
+> Why this matters: serverless runtimes open many short-lived DB connections. Pooling avoids connection exhaustion.
+
 ## Cricket API Note
 
 The app is wired for CricAPI (`https://api.cricapi.com/v1`).
@@ -114,7 +131,7 @@ The app is wired for CricAPI (`https://api.cricapi.com/v1`).
 
 ## Production Recommendations
 
-- Move scoring refresh to cron/webhook + queue worker.
+- Move scoring refresh to Vercel Cron/webhook + queue worker.
 - Add Redis caching for external API responses.
 - Add rate-limits and bot protection on join endpoint.
 - Add observability (structured logs + tracing + error monitoring).
