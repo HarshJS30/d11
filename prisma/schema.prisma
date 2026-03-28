@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MatchStatus {
+  UPCOMING
+  LIVE
+  COMPLETED
+}
+
+enum PlayerRole {
+  BAT
+  BOWL
+  AR
+  WK
+}
+
+enum MultiplierRole {
+  CAPTAIN
+  VICE_CAPTAIN
+  NONE
+}
+
+model Match {
+  id         String      @id @default(cuid())
+  externalId String      @unique
+  title      String
+  teamA      String
+  teamB      String
+  startsAt   DateTime
+  status     MatchStatus
+  contest    Contest?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Contest {
+  id         String         @id @default(cuid())
+  matchId    String         @unique
+  match      Match          @relation(fields: [matchId], references: [id])
+  entries    ContestEntry[]
+  createdAt  DateTime       @default(now())
+}
+
+model Player {
+  id         String       @id @default(cuid())
+  externalId String       @unique
+  name       String
+  teamName   String
+  role       PlayerRole
+  selections TeamPlayer[]
+  stats      PlayerStat[]
+}
+
+model ContestEntry {
+  id            String       @id @default(cuid())
+  contestId      String
+  contest        Contest      @relation(fields: [contestId], references: [id])
+  participant    String
+  teamPlayers    TeamPlayer[]
+  totalPoints    Float        @default(0)
+  createdAt      DateTime     @default(now())
+
+  @@index([contestId, totalPoints])
+}
+
+model TeamPlayer {
+  id             String         @id @default(cuid())
+  contestEntryId String
+  contestEntry   ContestEntry   @relation(fields: [contestEntryId], references: [id])
+  playerId       String
+  player         Player         @relation(fields: [playerId], references: [id])
+  multiplierRole MultiplierRole @default(NONE)
+
+  @@unique([contestEntryId, playerId])
+}
+
+model PlayerStat {
+  id        String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id])
+  matchId    String
+  runs       Int      @default(0)
+  wickets    Int      @default(0)
+  catches    Int      @default(0)
+  ballsFaced Int?
+  points     Float    @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([playerId, matchId])
+}
