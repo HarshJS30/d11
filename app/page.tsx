@@ -1,7 +1,7 @@
 import { MatchCard } from "@/components/match-card";
 import { PageShell } from "@/components/page-shell";
 import { syncMatchesAndContests } from "@/lib/match-sync";
-
+export const dynamic = "force-dynamic";
 export default async function Home() {
   const matches = await syncMatchesAndContests();
 
